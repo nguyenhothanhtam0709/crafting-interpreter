@@ -110,9 +110,32 @@ public class Scanner {
                     while (peek() != '\n' && !isAtEnd()) {
                         advance();
                     }
-                } else {
-                    addToken(TokenType.SLASH);
+                    break;
                 }
+
+                if (match('*')) {
+                    // Multiline comment
+                    while (peek() != '*' && peekNext() != '/' && !isAtEnd()) {
+                        if (peek() == '\n') {
+                            line++;
+                        }
+
+                        advance();
+                    }
+
+                    if (isAtEnd()) {
+                        Lox.error(line, "Unterminated multiline comment.");
+                        break;
+                    }
+
+                    // Terminating the multiline comment
+                    advance();
+                    advance();
+
+                    break;
+                }
+
+                addToken(TokenType.SLASH);
             }
             case ' ', '\r', '\t' -> {
                 // Ignore whitespace.
