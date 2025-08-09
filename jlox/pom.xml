@@ -16,6 +16,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
+    <exec.mainClass>dev.tamnguyen.lox.Lox</exec.mainClass>
   </properties>
 
   <dependencies>
@@ -75,7 +76,7 @@
             <artifactId>exec-maven-plugin</artifactId>
             <version>3.5.0</version>
             <configuration>
-                <mainClass>dev.tamnguyen.lox.Lox</mainClass>
+              <mainClass>${exec.mainClass}</mainClass>
             </configuration>
         </plugin>
       </plugins>

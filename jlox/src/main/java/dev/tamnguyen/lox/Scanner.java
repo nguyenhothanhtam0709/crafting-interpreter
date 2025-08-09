@@ -158,8 +158,6 @@ public class Scanner {
                 Lox.error(line, "Unexpected character.");
             }
         }
-        // Ignore whitespace.
-
     }
 
     private void identifier() {
