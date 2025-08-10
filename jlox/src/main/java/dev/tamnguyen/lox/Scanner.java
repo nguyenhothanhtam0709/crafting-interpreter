@@ -137,6 +137,10 @@ public class Scanner {
 
                 addToken(TokenType.SLASH);
             }
+            case '?' ->
+                addToken(TokenType.QUESTION_MARK);
+            case ':' ->
+                addToken(TokenType.COLON);
             case ' ', '\r', '\t' -> {
                 // Ignore whitespace.
             }

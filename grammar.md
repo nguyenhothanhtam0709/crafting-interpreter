@@ -4,7 +4,8 @@
 
 ```ebnf
 expression     → comma ;
-comma          → equality (',' equality)* ;
+comma          → conditional (',' conditional)* ;
+conditional    → equality (? equality : equality)*; // above assignment in precedence
 equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term           → factor ( ( "-" | "+" ) factor )* ;
