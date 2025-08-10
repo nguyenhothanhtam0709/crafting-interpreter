@@ -76,6 +76,9 @@ public class Interpreter implements Expr.Visitor<Object> {
             case TokenType.EQUAL_EQUAL -> {
                 return isEqual(left, right);
             }
+            case TokenType.COMMA -> {
+                return right;
+            }
         }
 
         return null;
