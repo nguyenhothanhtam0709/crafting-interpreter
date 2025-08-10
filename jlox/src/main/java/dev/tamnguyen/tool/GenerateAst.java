@@ -55,17 +55,20 @@ public class GenerateAst {
 
             defineVisitor(writer, baseName, types);
 
+            writer.println();
+
             //> Define subclasses
             for (String type : types) {
                 String className = type.split(":")[0].trim();
                 String fields = type.split(":")[1].trim();
                 defineType(writer, baseName, className, fields);
+                writer.println();
             }
             //< Define subclasses
 
             // The base accept() method
             writer.println();
-            writer.println(" public abstract <R> R accept(Visitor<R> visitor);");
+            writer.println("    public abstract <R> R accept(Visitor<R> visitor);");
 
             writer.println("}");
         }
@@ -78,34 +81,18 @@ public class GenerateAst {
 
         String[] fields = fieldList.split(", ");
 
-        // // constructor
-        // writer.println("        public " + className + "(" + fieldList + ") {");
-        // // stores parameter in fields.
-        // for (String field : fields) {
-        //     String name = field.split(" ")[1];
-        //     writer.println("            this." + name + "=" + name + ";");
-        // }
-        // writer.println("        }");
         // fields
         for (String field : fields) {
-            writer.println("      private final " + field + ";");
+            writer.println("        private final " + field + ";");
         }
 
-        // // getters
-        // for (String field : fields) {
-        //     String type = field.split(" ")[0];
-        //     String name = field.split(" ")[1];
-        //     writer.println("      public " + type + " get" + capitalizeFirst(name) + "() {");
-        //     writer.println("          return this." + name + ";");
-        //     writer.println("        }");
-        // }
         // method
         writer.println();
-        writer.println("  @Override");
-        writer.println(" public <R> R accept(Visitor<R> visitor) {");
-        writer.println("      return visitor.visit"
+        writer.println("        @Override");
+        writer.println("        public <R> R accept(Visitor<R> visitor) {");
+        writer.println("            return visitor.visit"
                 + className + baseName + "(this);");
-        writer.println("    }");
+        writer.println("        }");
 
         writer.println("    }");
     }
