@@ -46,6 +46,11 @@ public class GenerateAst {
             writer.println("import lombok.AllArgsConstructor;");
             writer.println();
 
+            writer.println("/**");
+            writer.println(" * Abstract syntax tree");
+            writer.println(" *");
+            writer.println(" */");
+
             writer.println("@Generated(");
             writer.println("    value=\"" + generatedBy + "\",");
             writer.println("    date=\"" + generatedTime + "\",");
