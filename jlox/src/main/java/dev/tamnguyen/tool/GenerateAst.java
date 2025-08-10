@@ -42,6 +42,8 @@ public class GenerateAst {
 
             writer.println("import java.util.List;");
             writer.println("import javax.annotation.processing.Generated;");
+            writer.println("import lombok.Getter;");
+            writer.println("import lombok.AllArgsConstructor;");
             writer.println();
 
             writer.println("@Generated(");
@@ -70,35 +72,33 @@ public class GenerateAst {
     }
 
     private static void defineType(PrintWriter writer, String baseName, String className, String fieldList) throws IOException {
+        writer.println("    @AllArgsConstructor");
+        writer.println("    @Getter");
         writer.println("    public static class " + className + " extends " + baseName + " {");
-
-        // constructor
-        writer.println("        public " + className + "(" + fieldList + ") {");
 
         String[] fields = fieldList.split(", ");
 
-        // stores parameter in fields.
-        for (String field : fields) {
-            String name = field.split(" ")[1];
-            writer.println("            this." + name + "=" + name + ";");
-        }
-
-        writer.println("        }");
-
+        // // constructor
+        // writer.println("        public " + className + "(" + fieldList + ") {");
+        // // stores parameter in fields.
+        // for (String field : fields) {
+        //     String name = field.split(" ")[1];
+        //     writer.println("            this." + name + "=" + name + ";");
+        // }
+        // writer.println("        }");
         // fields
         for (String field : fields) {
             writer.println("      private final " + field + ";");
         }
 
-        // getters
-        for (String field : fields) {
-            String type = field.split(" ")[0];
-            String name = field.split(" ")[1];
-            writer.println("      public " + type + " get" + capitalizeFirst(name) + "() {");
-            writer.println("          return this." + name + ";");
-            writer.println("        }");
-        }
-
+        // // getters
+        // for (String field : fields) {
+        //     String type = field.split(" ")[0];
+        //     String name = field.split(" ")[1];
+        //     writer.println("      public " + type + " get" + capitalizeFirst(name) + "() {");
+        //     writer.println("          return this." + name + ";");
+        //     writer.println("        }");
+        // }
         // method
         writer.println();
         writer.println("  @Override");

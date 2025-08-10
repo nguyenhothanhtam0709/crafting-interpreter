@@ -1,5 +1,10 @@
 package dev.tamnguyen.lox;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@AllArgsConstructor
+@Getter
 public class Token {
 
     private final TokenType type;
@@ -7,19 +12,8 @@ public class Token {
     private final Object literal;
     private final int line;
 
-    public Token(TokenType type, String lexeme, Object literal, int line) {
-        this.type = type;
-        this.lexeme = lexeme;
-        this.literal = literal;
-        this.line = line;
-    }
-
     @Override
     public String toString() {
         return type + " " + lexeme + " " + literal;
-    }
-
-    public String getLexeme() {
-        return this.lexeme;
     }
 }
