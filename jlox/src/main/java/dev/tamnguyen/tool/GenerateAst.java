@@ -30,7 +30,9 @@ public class GenerateAst {
                 "If             : Expr condition, Stmt thenBranch, Stmt elseBranch",
                 "Print          : Expr expression",
                 "Var            : Token name, Expr initializer",
-                "While          : Expr condition, Stmt body"));
+                "While          : Expr condition, Stmt body",
+                "Break",
+                "Continue"));
     }
 
     private static void defineAst(String outputDir, String baseName, List<String> types) throws IOException {
@@ -74,8 +76,10 @@ public class GenerateAst {
 
             // > Define subclasses
             for (String type : types) {
-                String className = type.split(":")[0].trim();
-                String fields = type.split(":")[1].trim();
+                String[] splitted = type.split(":");
+
+                String className = splitted[0].trim();
+                String fields = splitted.length > 1 ? splitted[1].trim() : "";
                 defineType(writer, baseName, className, fields);
                 writer.println();
             }
@@ -99,7 +103,9 @@ public class GenerateAst {
 
         // fields
         for (String field : fields) {
-            writer.println("        private final " + field + ";");
+            if (field.trim().length() > 0) {
+                writer.println("        private final " + field + ";");
+            }
         }
 
         // method

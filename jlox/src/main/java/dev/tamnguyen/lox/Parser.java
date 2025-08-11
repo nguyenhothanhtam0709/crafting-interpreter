@@ -70,11 +70,29 @@ public class Parser {
             return whileStatement();
         }
 
+        if (match(TokenType.BREAK)) {
+            return breakStatement();
+        }
+
+        if (match(TokenType.CONTINUE)) {
+            return continueStatement();
+        }
+
         if (match(TokenType.LEFT_BRACE)) {
             return new Stmt.Block(block());
         }
 
         return expressionStatement();
+    }
+
+    private Stmt breakStatement() {
+        consume(TokenType.SEMICOLON, "Expect ';' after 'break'.");
+        return new Stmt.Break();
+    }
+
+    private Stmt continueStatement() {
+        consume(TokenType.SEMICOLON, "Expect ';' after 'continue'.");
+        return new Stmt.Continue();
     }
 
     private Stmt forStatement() {
@@ -389,8 +407,7 @@ public class Parser {
             }
 
             switch (peek().getType()) {
-                case TokenType.CLASS, TokenType.FUN, TokenType.VAR, TokenType.FOR, TokenType.IF, TokenType.WHILE,
-                        TokenType.PRINT, TokenType.RETURN -> {
+                case TokenType.CLASS, TokenType.FUN, TokenType.VAR, TokenType.FOR, TokenType.IF, TokenType.WHILE, TokenType.PRINT, TokenType.RETURN -> {
                     return;
                 }
             }

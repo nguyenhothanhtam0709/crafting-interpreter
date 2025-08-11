@@ -6,6 +6,7 @@ import java.util.List;
  * A tree-walking interpreter
  */
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
+
     private Environment environment = new Environment();
 
     public void interpret(List<Stmt> statements) {
@@ -16,6 +17,16 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         } catch (RuntimeError error) {
             Lox.runtimeError(error);
         }
+    }
+
+    @Override
+    public Void visitBreakStmt(Stmt.Break stmt) {
+        throw new Interpreter.BreakContinuation();
+    }
+
+    @Override
+    public Void visitContinueStmt(Stmt.Continue stmt) {
+        throw new Interpreter.ContinueContinuation();
     }
 
     @Override
@@ -32,7 +43,12 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Void visitWhileStmt(Stmt.While stmt) {
         while (isTruthy(evaluate(stmt.getCondition()))) {
-            execute(stmt.getBody());
+            try {
+                execute(stmt.getBody());
+            } catch (Interpreter.BreakContinuation e) {
+                break;
+            } catch (Interpreter.ContinueContinuation e) {
+            }
         }
 
         return null;
@@ -281,5 +297,18 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
 
         return object.toString();
+    }
+
+    private static class Continuation extends RuntimeException {
+
+        public Continuation() {
+            super(null, null, false, false);
+        }
+    }
+
+    private static class BreakContinuation extends Continuation {
+    }
+
+    private static class ContinueContinuation extends Continuation {
     }
 }
