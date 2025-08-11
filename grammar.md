@@ -3,9 +3,14 @@
 ## Syntactic grammar
 
 ```ebnf
+program        → statement* EOF ;
+statement      → exprStmt
+               | printStmt ;
+exprStmt       → expression ";" ;
+printStmt      → "print" expression ";" ;
 expression     → comma ;
 comma          → conditional (',' conditional)* ;
-conditional    → equality (? equality : equality)*; // above assignment in precedence
+conditional    → equality (? equality : equality)* ; // above assignment in precedence
 equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term           → factor ( ( "-" | "+" ) factor )* ;

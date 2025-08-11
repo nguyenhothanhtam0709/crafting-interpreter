@@ -20,8 +20,10 @@ public class GenerateAst {
                 "Grouping       : Expr expression",
                 "Literal        : Object value",
                 "Unary          : Token operator, Expr right",
-                "Conditional    : Expr condExpr, Expr thenExpr, Expr elseExpr"
-        ));
+                "Conditional    : Expr condExpr, Expr thenExpr, Expr elseExpr"));
+        defineAst(outputDir, "Stmt", Arrays.asList(
+                "Expression     : Expr expression",
+                "Print          : Expr expression"));
     }
 
     private static void defineAst(String outputDir, String baseName, List<String> types) throws IOException {
@@ -48,7 +50,7 @@ public class GenerateAst {
             writer.println();
 
             writer.println("/**");
-            writer.println(" * Abstract syntax tree");
+            writer.println(" * Abstract syntax tree node");
             writer.println(" *");
             writer.println(" */");
 
@@ -63,14 +65,14 @@ public class GenerateAst {
 
             writer.println();
 
-            //> Define subclasses
+            // > Define subclasses
             for (String type : types) {
                 String className = type.split(":")[0].trim();
                 String fields = type.split(":")[1].trim();
                 defineType(writer, baseName, className, fields);
                 writer.println();
             }
-            //< Define subclasses
+            // < Define subclasses
 
             // The base accept() method
             writer.println();
@@ -80,7 +82,8 @@ public class GenerateAst {
         }
     }
 
-    private static void defineType(PrintWriter writer, String baseName, String className, String fieldList) throws IOException {
+    private static void defineType(PrintWriter writer, String baseName, String className, String fieldList)
+            throws IOException {
         writer.println("    @AllArgsConstructor");
         writer.println("    @Getter");
         writer.println("    public static class " + className + " extends " + baseName + " {");

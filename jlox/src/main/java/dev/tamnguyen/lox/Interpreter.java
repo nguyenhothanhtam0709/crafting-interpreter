@@ -1,17 +1,33 @@
 package dev.tamnguyen.lox;
 
+import java.util.List;
+
 /**
  * A tree-walking interpreter
  */
-public class Interpreter implements Expr.Visitor<Object> {
+public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
-    public void interpret(Expr expr) {
+    public void interpret(List<Stmt> statements) {
         try {
-            Object value = evaluate(expr);
-            System.out.print(stringify(value));
+            for (Stmt statement : statements) {
+                execute(statement);
+            }
         } catch (RuntimeError error) {
             Lox.runtimeError(error);
         }
+    }
+
+    @Override
+    public Void visitExpressionStmt(Stmt.Expression stmt) {
+        evaluate(stmt.getExpression());
+        return null;
+    }
+
+    @Override
+    public Void visitPrintStmt(Stmt.Print stmt) {
+        Object value = evaluate(stmt.getExpression());
+        System.out.print(stringify(value));
+        return null;
     }
 
     @Override
@@ -115,6 +131,16 @@ public class Interpreter implements Expr.Visitor<Object> {
         return isTruthy(evaluate(expr.getCondExpr())) ? evaluate(expr.getThenExpr()) : evaluate(expr.getElseExpr());
     }
 
+    /**
+     * Execute a statement.
+     */
+    private void execute(Stmt stmt) {
+        stmt.accept(this);
+    }
+
+    /**
+     * Evaluate an expression.
+     */
     private Object evaluate(Expr expr) {
         return expr.accept(this);
     }
