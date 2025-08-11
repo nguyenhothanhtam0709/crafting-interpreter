@@ -11,7 +11,9 @@ statement      → exprStmt
                | ifStmt
                | printStmt 
                | whileStmt
+               | forStmt
                | block;
+ifStmt         → "(" (varDecl | exprStmt | ";") expression? ";" expression? ")" statement ;
 whileStmt      → "(" expression ")" statement ;
 ifStmt         → "if" "(" expression ")" statement ("else" statement)? ;
 block          → "{" declaration* "}" ;
