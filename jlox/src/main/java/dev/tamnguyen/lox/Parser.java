@@ -140,13 +140,37 @@ public class Parser {
     }
 
     private Expr conditional() {
-        Expr expr = equality();
+        Expr expr = or();
 
         if (match(TokenType.QUESTION_MARK)) {
-            Expr thenExpr = equality();
+            Expr thenExpr = or();
             consume(TokenType.COLON, "Expect ':' after then expression.");
-            Expr elseExpr = equality();
+            Expr elseExpr = or();
             expr = new Expr.Conditional(expr, thenExpr, elseExpr);
+        }
+
+        return expr;
+    }
+
+    private Expr or() {
+        Expr expr = and();
+
+        while (match(TokenType.OR)) {
+            Token operator = previous();
+            Expr right = and();
+            expr = new Expr.Logical(expr, operator, right);
+        }
+
+        return expr;
+    }
+
+    private Expr and() {
+        Expr expr = equality();
+
+        while (match(TokenType.AND)) {
+            Token operator = previous();
+            Expr right = equality();
+            expr = new Expr.Logical(expr, operator, right);
         }
 
         return expr;

@@ -1,5 +1,7 @@
 package dev.tamnguyen.lox;
 
+import dev.tamnguyen.lox.Expr.Logical;
+
 public class AstPrinter implements Expr.Visitor<String> {
 
     public String print(Expr expr) {
@@ -32,6 +34,11 @@ public class AstPrinter implements Expr.Visitor<String> {
     @Override
     public String visitConditionalExpr(Expr.Conditional expr) {
         return parenthesize("?:", expr.getCondExpr(), expr.getThenExpr(), expr.getElseExpr());
+    }
+
+    @Override
+    public String visitLogicalExpr(Logical expr) {
+        return parenthesize(expr.getOperator().getLexeme(), expr.getLeft(), expr.getRight());
     }
 
     @Override
