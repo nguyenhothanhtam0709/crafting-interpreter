@@ -164,18 +164,21 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Object visitLogicalExpr(Expr.Logical expr) {
         Object left = evaluate(expr.getLeft());
-        Object right = evaluate(expr.getRight());
 
         switch (expr.getOperator().getType()) {
             case TokenType.OR -> {
-                return isTruthy(left) || isTruthy(right);
+                if (isTruthy(left)) {
+                    return left;
+                }
             }
             case TokenType.AND -> {
-                return isTruthy(left) && isTruthy(right);
+                if (!isTruthy(left)) {
+                    return left;
+                }
             }
         }
 
-        return null;
+        return evaluate(expr.getRight());
     }
 
     @Override
