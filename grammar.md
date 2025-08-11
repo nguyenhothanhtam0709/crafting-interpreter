@@ -4,15 +4,21 @@
 
 ```ebnf
 program        → declaration* EOF ;
-declaration    → varDecl
+declaration    → funcDecl
+               | varDecl
                | statement ;
+funDecl        → "fun" function;
+function       → IDENTIFIER  "(" parameters? ")" ;
+parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
 varDecl        → "var" IDENTIFIER ( "=" expression)? ";" ;
 statement      → exprStmt
                | ifStmt
                | printStmt 
                | whileStmt
                | forStmt
+               | returnStmt
                | block;
+returnStmt     → "return" expression? ";" ;
 ifStmt         → "(" (varDecl | exprStmt | ";") expression? ";" expression? ")" statement ;
 whileStmt      → "(" expression ")" statement ;
 ifStmt         → "if" "(" expression ")" statement ("else" statement)? ;
@@ -31,7 +37,9 @@ comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term           → factor ( ( "-" | "+" ) factor )* ;
 factor         → unary ( ( "/" | "*" ) unary )* ;
 unary          → ( "!" | "-" ) unary
-               | primary ;
+               | call ;
+call           → primary ( "(" arguments ")" )* ;
+arguments      → expression ( "," expression )* ;
 primary        → "true" | "false" | "nil"
                | NUMBER | STRING
                | "(" expression ")"

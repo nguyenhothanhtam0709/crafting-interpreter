@@ -19,6 +19,7 @@ public class GenerateAst {
                 "Assign         : Token name, Expr value",
                 "Binary         : Expr left, Token operator, Expr right",
                 "Grouping       : Expr expression",
+                "Call           : Expr callee, Token paren, List<Expr> arguments",
                 "Literal        : Object value",
                 "Logical        : Expr left, Token operator, Expr right",
                 "Unary          : Token operator, Expr right",
@@ -32,7 +33,9 @@ public class GenerateAst {
                 "Var            : Token name, Expr initializer",
                 "While          : Expr condition, Stmt body",
                 "Break",
-                "Continue"));
+                "Continue",
+                "Function       : Token name, List<Token> params, List<Stmt> body",
+                "Return         : Token keyword, Expr value"));
     }
 
     private static void defineAst(String outputDir, String baseName, List<String> types) throws IOException {
