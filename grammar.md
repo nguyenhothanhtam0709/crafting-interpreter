@@ -3,20 +3,29 @@
 ## Syntactic grammar
 
 ```ebnf
-program        → statement* EOF ;
+program        → declaration* EOF ;
+declaration    → varDecl
+               | statement ;
+varDecl        → "var" IDENTIFIER ( "=" expression)? ";" ;
 statement      → exprStmt
-               | printStmt ;
+               | printStmt 
+               | block;
+block          → "{" declaration* "}" ;
 exprStmt       → expression ";" ;
 printStmt      → "print" expression ";" ;
 expression     → comma ;
-comma          → conditional (',' conditional)* ;
-conditional    → equality (? equality : equality)* ; // above assignment in precedence
+comma          → assignment (',' assignment)* ;
+assignment     → IDENTIFIER "=" assignment
+               → conditional
+conditional    → equality (? equality : equality)* ;
 equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term           → factor ( ( "-" | "+" ) factor )* ;
 factor         → unary ( ( "/" | "*" ) unary )* ;
 unary          → ( "!" | "-" ) unary
                | primary ;
-primary        → NUMBER | STRING | "true" | "false" | "nil"
-               | "(" expression ")" ;
+primary        → "true" | "false" | "nil"
+               | NUMBER | STRING
+               | "(" expression ")"
+               | IDENTIFIER ;
 ```

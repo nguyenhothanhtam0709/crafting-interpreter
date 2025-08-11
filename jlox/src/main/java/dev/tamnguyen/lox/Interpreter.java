@@ -6,6 +6,7 @@ import java.util.List;
  * A tree-walking interpreter
  */
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
+    private Environment environment = new Environment();
 
     public void interpret(List<Stmt> statements) {
         try {
@@ -18,6 +19,24 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitVarStmt(Stmt.Var stmt) {
+        Object value = null;
+        if (stmt.getInitializer() != null) {
+            value = evaluate(stmt.getInitializer());
+        }
+
+        environment.define(stmt.getName().getLexeme(), value);
+        return null;
+    }
+
+    @Override
+    public Object visitAssignExpr(Expr.Assign expr) {
+        Object value = evaluate(expr.getValue());
+        environment.assign(expr.getName(), value);
+        return value;
+    }
+
+    @Override
     public Void visitExpressionStmt(Stmt.Expression stmt) {
         evaluate(stmt.getExpression());
         return null;
@@ -27,6 +46,12 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     public Void visitPrintStmt(Stmt.Print stmt) {
         Object value = evaluate(stmt.getExpression());
         System.out.print(stringify(value));
+        return null;
+    }
+
+    @Override
+    public Void visitBlockStmt(Stmt.Block stmt) {
+        executeBlock(stmt.getStatements(), new Environment(environment));
         return null;
     }
 
@@ -131,11 +156,30 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return isTruthy(evaluate(expr.getCondExpr())) ? evaluate(expr.getThenExpr()) : evaluate(expr.getElseExpr());
     }
 
+    @Override
+    public Object visitVariableExpr(Expr.Variable expr) {
+        return environment.get(expr.getName());
+    }
+
     /**
      * Execute a statement.
      */
     private void execute(Stmt stmt) {
         stmt.accept(this);
+    }
+
+    private void executeBlock(List<Stmt> statements, Environment environment) {
+        Environment previous = this.environment;
+
+        try {
+            this.environment = environment;
+
+            for (Stmt statement : statements) {
+                execute(statement);
+            }
+        } finally {
+            this.environment = previous;
+        }
     }
 
     /**
