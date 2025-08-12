@@ -1,7 +1,9 @@
 package dev.tamnguyen.lox;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import lombok.Getter;
 
@@ -13,6 +15,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Getter
     private final Environment globals = new Environment();
     private Environment environment = globals;
+    private final Map<Expr, Integer> locals = new HashMap<>();
 
     public Interpreter() {
         globals.define("clock", new LoxCallable() {
@@ -41,6 +44,18 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         } catch (RuntimeError error) {
             Lox.runtimeError(error);
         }
+    }
+
+    /**
+     * Store resolution information: - How many scopes there are between the
+     * current scope and the scope where the variable is defined. At runtime,
+     * this corresponds exactly to the number of environments between the
+     * current one and the enclosing one where the interpreter can find the
+     * variable’s value.
+     *
+     */
+    public void resolve(Expr expr, int depth) {
+        locals.put(expr, depth);
     }
 
     @Override
@@ -102,7 +117,14 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Object visitAssignExpr(Expr.Assign expr) {
         Object value = evaluate(expr.getValue());
-        environment.assign(expr.getName(), value);
+
+        Integer distance = locals.get(expr);
+        if (distance != null) {
+            environment.assignAt(distance, expr.getName(), value);
+        } else {
+            globals.assign(expr.getName(), value);
+        }
+
         return value;
     }
 
@@ -217,7 +239,8 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
         LoxCallable function = (LoxCallable) callee;
         if (arguments.size() != function.arity()) {
-            throw new RuntimeError(expr.getParen(), "Expected " + function.arity() + " arguments but got " + arguments.size() + ".");
+            throw new RuntimeError(expr.getParen(),
+                    "Expected " + function.arity() + " arguments but got " + arguments.size() + ".");
         }
 
         return function.call(this, arguments);
@@ -276,7 +299,16 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Object visitVariableExpr(Expr.Variable expr) {
-        return environment.get(expr.getName());
+        return lookUpVariable(expr.getName(), expr);
+    }
+
+    private Object lookUpVariable(Token name, Expr expr) {
+        Integer distance = locals.get(expr);
+        if (distance != null) {
+            return environment.getAt(distance, name.getLexeme());
+        } else {
+            return globals.get(name);
+        }
     }
 
     /**

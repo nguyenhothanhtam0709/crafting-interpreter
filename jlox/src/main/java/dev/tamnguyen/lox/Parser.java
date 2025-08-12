@@ -127,13 +127,15 @@ public class Parser {
     }
 
     private Stmt breakStatement() {
+        Token keyword = previous();
         consume(TokenType.SEMICOLON, "Expect ';' after 'break'.");
-        return new Stmt.Break();
+        return new Stmt.Break(keyword);
     }
 
     private Stmt continueStatement() {
+        Token keyword = previous();
         consume(TokenType.SEMICOLON, "Expect ';' after 'continue'.");
-        return new Stmt.Continue();
+        return new Stmt.Continue(keyword);
     }
 
     private Stmt forStatement() {
