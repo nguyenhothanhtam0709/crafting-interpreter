@@ -61,7 +61,7 @@ public class GenerateAst {
             writer.println(" */");
 
             writeBasicAnnotation(writer, generatedTime, generatedBy);
-            writer.println("public abstract class " + baseName + " {");
+            writer.println("public abstract class " + baseName + " extends AstNode {");
 
             defineVisitor(writer, baseName, types);
 
