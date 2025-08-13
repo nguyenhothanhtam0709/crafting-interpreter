@@ -9,4 +9,7 @@ gen_ast:
 test:
 	mvn test
 
-.PHONY: dev test gen_ast
+build:
+	mvn clean compile
+
+.PHONY: dev test build gen_ast
