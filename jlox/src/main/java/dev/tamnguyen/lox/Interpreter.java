@@ -59,6 +59,22 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitClassStmt(Stmt.Class stmt) {
+        environment.define(stmt.getName().getLexeme(), null);
+
+        Map<String, LoxFunction> methods = new HashMap<>();
+        for (Stmt.Function method : stmt.getMethods()) {
+            methods.put(method.getName().getLexeme(),
+                    new LoxFunction(method, environment, method.getName().getLexeme().equals("init")));
+        }
+
+        LoxClass klass = new LoxClass(stmt.getName().getLexeme(), methods);
+        environment.assign(stmt.getName(), klass);
+
+        return null;
+    }
+
+    @Override
     public Void visitBreakStmt(Stmt.Break stmt) {
         throw new Interpreter.BreakContinuation();
     }
@@ -247,6 +263,17 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Object visitGetExpr(Expr.Get expr) {
+        Object object = evaluate(expr.getObject());
+        if (object instanceof LoxInstance) {
+            return ((LoxInstance) object).get(expr.getName());
+        }
+
+        throw new RuntimeError(expr.getName(),
+                "Only instances have properties.");
+    }
+
+    @Override
     public Object visitLogicalExpr(Expr.Logical expr) {
         Object left = evaluate(expr.getLeft());
 
@@ -264,6 +291,25 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
 
         return evaluate(expr.getRight());
+    }
+
+    @Override
+    public Object visitSetExpr(Expr.Set expr) {
+        Object object = evaluate(expr.getObject());
+
+        if (!(object instanceof LoxInstance)) {
+            throw new RuntimeError(expr.getName(),
+                    "Only instances have fields.");
+        }
+
+        Object value = evaluate(expr.getValue());
+        ((LoxInstance) object).set(expr.getName(), value);
+        return value;
+    }
+
+    @Override
+    public Object visitThisExpr(Expr.This expr) {
+        return lookUpVariable(expr.getKeyword(), expr);
     }
 
     @Override

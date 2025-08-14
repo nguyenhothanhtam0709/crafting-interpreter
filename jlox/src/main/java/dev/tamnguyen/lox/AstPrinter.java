@@ -1,6 +1,9 @@
 package dev.tamnguyen.lox;
 
+import dev.tamnguyen.lox.Expr.Get;
 import dev.tamnguyen.lox.Expr.Logical;
+import dev.tamnguyen.lox.Expr.Set;
+import dev.tamnguyen.lox.Expr.This;
 
 public class AstPrinter implements Expr.Visitor<String> {
 
@@ -67,5 +70,23 @@ public class AstPrinter implements Expr.Visitor<String> {
         builder.append(")");
 
         return builder.toString();
+    }
+
+    @Override
+    public String visitGetExpr(Get expr) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'visitGetExpr'");
+    }
+
+    @Override
+    public String visitSetExpr(Set expr) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'visitSetExpr'");
+    }
+
+    @Override
+    public String visitThisExpr(This expr) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'visitThisExpr'");
     }
 }

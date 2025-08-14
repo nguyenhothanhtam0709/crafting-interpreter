@@ -35,6 +35,26 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitClassStmt(Stmt.Class stmt) {
+        declare(stmt.getName());
+
+        beginScope();
+        scopes.peek().put("this", true);
+
+        for (Stmt.Function method : stmt.getMethods()) {
+            FunctionType declaration = method.getName().getLexeme().equals("init")
+                    ? FunctionType.INITIALIZER
+                    : FunctionType.METHOD;
+            resolveFunction(method, declaration);
+        }
+
+        endScope();
+
+        define(stmt.getName());
+        return null;
+    }
+
+    @Override
     public Void visitExpressionStmt(Stmt.Expression stmt) {
         resolve(stmt.getExpression());
         return null;
@@ -72,6 +92,11 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         }
 
         if (stmt.getValue() != null) {
+            if (currentFunction == FunctionType.INITIALIZER) {
+                Lox.error(stmt.getKeyword(),
+                        "Can't return a value from an initializer.");
+            }
+
             resolve(stmt.getValue());
         }
 
@@ -130,6 +155,12 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitGetExpr(Expr.Get expr) {
+        resolve(expr.getObject());
+        return null;
+    }
+
+    @Override
     public Void visitGroupingExpr(Expr.Grouping expr) {
         resolve(expr.getExpression());
         return null;
@@ -144,6 +175,19 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     public Void visitLogicalExpr(Expr.Logical expr) {
         resolve(expr.getLeft());
         resolve(expr.getRight());
+        return null;
+    }
+
+    @Override
+    public Void visitSetExpr(Expr.Set expr) {
+        resolve(expr.getValue());
+        resolve(expr.getObject());
+        return null;
+    }
+
+    @Override
+    public Void visitThisExpr(Expr.This expr) {
+        resolveLocal(expr, expr.getKeyword());
         return null;
     }
 
@@ -256,7 +300,9 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     private enum FunctionType {
         NONE,
-        FUNCTION
+        FUNCTION,
+        INITIALIZER,
+        METHOD
     }
 
     private enum BlockScopeType {
