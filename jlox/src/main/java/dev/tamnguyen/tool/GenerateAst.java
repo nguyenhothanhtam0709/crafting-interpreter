@@ -27,10 +27,11 @@ public class GenerateAst {
                 "Conditional    : Expr condExpr, Expr thenExpr, Expr elseExpr",
                 "Variable       : Token name",
                 "Get            : Expr object, Token name",
-                "Set            : Expr object, Token name, Expr value"));
+                "Set            : Expr object, Token name, Expr value",
+                "Super          : Token keyword, Token method"));
         defineAst(outputDir, "Stmt", Arrays.asList(
                 "Block          : List<Stmt> statements",
-                "Class          : Token name, List<Stmt.Function> methods",
+                "Class          : Token name, Expr.Variable superclass, List<Stmt.Function> methods",
                 "Expression     : Expr expression",
                 "If             : Expr condition, Stmt thenBranch, Stmt elseBranch",
                 "Print          : Expr expression",

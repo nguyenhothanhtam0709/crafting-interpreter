@@ -3,6 +3,8 @@ package dev.tamnguyen.lox;
 import java.util.HashMap;
 import java.util.Map;
 
+import lombok.Getter;
+
 /**
  * Act like a symbol table.
  */
@@ -11,6 +13,7 @@ public class Environment {
     /**
      * Outer scope
      */
+    @Getter
     private final Environment enclosing;
     private final Map<String, Object> values = new HashMap<>();
 

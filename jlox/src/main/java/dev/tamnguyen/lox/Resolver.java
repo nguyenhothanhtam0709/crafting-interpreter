@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
+import javax.crypto.interfaces.PBEKey;
+
 import dev.tamnguyen.lox.Expr.Conditional;
 import dev.tamnguyen.lox.Stmt.Break;
 import dev.tamnguyen.lox.Stmt.Continue;
@@ -38,6 +40,20 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     public Void visitClassStmt(Stmt.Class stmt) {
         declare(stmt.getName());
 
+        if (stmt.getSuperclass() != null && stmt.getName().getLexeme().equals(stmt.getSuperclass().getName().getLexeme())) {
+            Lox.error(stmt.getSuperclass().getName(),
+                    "A class can't inherit from itself.");
+        }
+
+        if (stmt.getSuperclass() != null) {
+            resolve(stmt.getSuperclass());
+        }
+
+        if (stmt.getSuperclass() != null) {
+            beginScope();
+            scopes.peek().put("super", true);
+        }
+
         beginScope();
         scopes.peek().put("this", true);
 
@@ -50,7 +66,17 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
         endScope();
 
+        if (stmt.getSuperclass() != null) {
+            endScope();
+        }
+
         define(stmt.getName());
+        return null;
+    }
+
+    @Override
+    public Void visitSuperExpr(Expr.Super expr) {
+        resolveLocal(expr, expr.getKeyword());
         return null;
     }
 
