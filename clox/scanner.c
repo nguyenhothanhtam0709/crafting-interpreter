@@ -220,6 +220,9 @@ static TokenType checkKeyword(int start, int length, const char *rest, TokenType
     return TOKEN_IDENTIFIER;
 }
 
+/**
+ * Basic implementation of trie tree
+ */
 static TokenType identifierType()
 {
     switch (peek())
