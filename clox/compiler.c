@@ -248,7 +248,11 @@ static void unary()
     }
 }
 
-/** Starts at the current token and parses any expression at the given precedence level or higher. */
+/** 
+ * Starts at the current token and parses any expression at the given precedence level or higher.
+ * 
+ * @details Pratt parsing algorithm
+ */
 static void parsePrecedence(Precedence precedence)
 {
     advance();
