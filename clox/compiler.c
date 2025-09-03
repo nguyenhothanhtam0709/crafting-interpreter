@@ -248,9 +248,9 @@ static void unary()
     }
 }
 
-/** 
+/**
  * Starts at the current token and parses any expression at the given precedence level or higher.
- * 
+ *
  * @details Pratt parsing algorithm
  */
 static void parsePrecedence(Precedence precedence)
@@ -263,13 +263,13 @@ static void parsePrecedence(Precedence precedence)
         return;
     }
 
-    prefixRule();
+    prefixRule(); // parse the left side of binary operator
 
     while (precedence <= getRule(parser.current.type)->precedence)
     {
         advance();
         ParseFn infixRule = getRule(parser.previous.type)->infix;
-        infixRule();
+        infixRule(); // parse the right side of binary operator
     }
 }
 
