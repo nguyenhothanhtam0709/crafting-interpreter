@@ -1,8 +1,9 @@
 #ifndef clox_vm_h
 #define clox_vm_h
 
-#include "chunk.h"
+#include "object.h"
 #include "value.h"
+#include "chunk.h"
 
 #define STACK_MAX 256
 
@@ -18,6 +19,10 @@ typedef struct
      * Stack pointer
      */
     Value *stackTop;
+    /**
+     * List of all objects stored in heap
+     */
+    Obj *objects;
 } VM;
 
 typedef enum
@@ -26,6 +31,8 @@ typedef enum
     INTERPRET_COMPILE_ERROR,
     INTERPRET_RUNTIME_ERROR
 } InterpretResult;
+
+extern VM vm;
 
 void initVM();
 void freeVM();

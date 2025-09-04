@@ -6,7 +6,6 @@
 #include "debug.h"
 #endif
 #include "scanner.h"
-#include "chunk.h"
 
 typedef struct
 {
@@ -55,6 +54,7 @@ static void unary();
 static void parsePrecedence(Precedence precedence);
 static ParseRule *getRule(TokenType type);
 static void number();
+static void string();
 static void expression();
 static void emitReturn();
 static uint8_t makeConstant(Value value);
@@ -85,7 +85,7 @@ ParseRule rules[] = {
     [TOKEN_LESS] = {NULL, binary, PREC_COMPARISON},
     [TOKEN_LESS_EQUAL] = {NULL, binary, PREC_COMPARISON},
     [TOKEN_IDENTIFIER] = {NULL, NULL, PREC_NONE},
-    [TOKEN_STRING] = {NULL, NULL, PREC_NONE},
+    [TOKEN_STRING] = {string, NULL, PREC_NONE},
     [TOKEN_NUMBER] = {number, NULL, PREC_NONE},
     [TOKEN_AND] = {NULL, NULL, PREC_NONE},
     [TOKEN_CLASS] = {NULL, NULL, PREC_NONE},
@@ -281,6 +281,11 @@ static void number()
 {
     double value = strtod(parser.previous.start, NULL);
     emitConstant(NUMBER_VAL(value));
+}
+
+static void string()
+{
+    emitConstant(OBJ_VAL(copyString(parser.previous.start + 1, parser.previous.length - 2)));
 }
 
 static void unary()

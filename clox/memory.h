@@ -2,6 +2,7 @@
 #define clox_memory_h
 
 #include "common.h"
+#include "object.h"
 
 /** Minimum threshold of array capacity*/
 #define ARRAY_COUNT_MINIMUM_THRESHOLD 8
@@ -9,18 +10,10 @@
 #define ARRAY_COUNT_SCALE_FACTOR 2
 
 /**
- * Common field for dynamic array struct
- *
- * @var count
- * @var capacity
+ * Allocate on the heap
  */
-#define DYNAMIC_ARRAY_STRUCT_COMMON_FIELD \
-    int count;                            \
-    int capacity;
-
-#define INIT_DYNAMIC_ARRAY_STRUCT_COMMON_FIELD(pointer) \
-    pointer->count = 0;                                 \
-    pointer->capacity = 0;
+#define ALLOCATE(type, count) \
+    (type *)reallocate(NULL, 0, sizeof(type) * (count))
 
 /**
  * Calculate new capacity for dynamic arrays based on a given current capacity.
@@ -52,6 +45,14 @@
     (type *)reallocate(pointer, sizeof(type) * (oldCount), 0)
 
 /**
+ * Free
+ *
+ * @param type type of pointer
+ * @param pointer pointer
+ */
+#define FREE(type, pointer) reallocate(pointer, sizeof(type), 0)
+
+/**
  * Dynamic memory allocation
  *
  * @details The two size arguments control which operation to perform:
@@ -64,5 +65,6 @@
  * Non-zero  | > oldSize   | Grow existing allocation.
  */
 void *reallocate(void *pointer, size_t oldSize, size_t newSize);
+void freeObjects();
 
 #endif
