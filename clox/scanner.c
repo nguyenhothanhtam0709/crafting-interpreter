@@ -225,7 +225,7 @@ static TokenType checkKeyword(int start, int length, const char *rest, TokenType
  */
 static TokenType identifierType()
 {
-    switch (peek())
+    switch (scanner.start[0])
     {
     case 'a':
         return checkKeyword(1, 2, "nd", TOKEN_AND);
@@ -237,7 +237,7 @@ static TokenType identifierType()
     {
         if (scanner.current - scanner.start > 1)
         {
-            switch (peekNext())
+            switch (scanner.start[1])
             {
             case 'a':
                 return checkKeyword(2, 3, "lse", TOKEN_FALSE);
@@ -265,7 +265,7 @@ static TokenType identifierType()
     {
         if (scanner.current - scanner.start > 1)
         {
-            switch (peekNext())
+            switch (scanner.start[1])
             {
             case 'h':
                 return checkKeyword(2, 2, "is", TOKEN_THIS);
