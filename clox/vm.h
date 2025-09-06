@@ -2,6 +2,7 @@
 #define clox_vm_h
 
 #include "object.h"
+#include "table.h"
 #include "value.h"
 #include "chunk.h"
 
@@ -19,6 +20,12 @@ typedef struct
      * Stack pointer
      */
     Value *stackTop;
+    /**
+     * Global string pool for `string interning`
+     * 
+     * @see https://craftinginterpreters.com/hash-tables.html#string-interning
+     */
+    Table strings;
     /**
      * List of all objects stored in heap
      */
