@@ -21,8 +21,12 @@ typedef struct
      */
     Value *stackTop;
     /**
+     * Global variables
+     */
+    Table globals;
+    /**
      * Global string pool for `string interning`
-     * 
+     *
      * @see https://craftinginterpreters.com/hash-tables.html#string-interning
      */
     Table strings;
