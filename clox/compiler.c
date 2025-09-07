@@ -556,7 +556,7 @@ static bool identifiersEqual(Token *a, Token *b)
         return false;
     }
 
-    return memcpy(a->start, b->start, a->length) == 0;
+    return memcmp(a->start, b->start, a->length) == 0;
 }
 
 /**
