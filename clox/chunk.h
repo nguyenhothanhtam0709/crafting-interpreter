@@ -30,7 +30,10 @@ typedef enum
     OP_DIVIDE,
     OP_NOT,
     OP_NEGATE,
-    OP_PRINT, // print statement
+    OP_PRINT,         // print statement
+    OP_JUMP,          // unconditional jump
+    OP_JUMP_IF_FALSE, // jump by offset if value is falsey
+    OP_LOOP,          // loop, actually it is a backward jump
     OP_RETURN
 } OpCode;
 
