@@ -6,15 +6,32 @@
 #include "value.h"
 #include "chunk.h"
 
-#define STACK_MAX 256
+#define FRAMES_MAX 64
+#define STACK_MAX (FRAMES_MAX * UINT8_COUNT)
+
+/**
+ * A stack frame
+ */
+typedef struct
+{
+    /**
+     * The function being called
+     */
+    ObjFunction *function;
+    /**
+     * Caller's current instruction pointer. When we return from a function, the VM will jump to the ip of the caller’s CallFrame and resume from there.
+     */
+    uint8_t *ip;
+    /**
+     * Local stack pointer
+     */
+    Value *slots;
+} CallFrame;
 
 typedef struct
 {
-    Chunk *chunk;
-    /**
-     * Instruction pointer or program counter
-     */
-    uint8_t *ip;
+    CallFrame frames[FRAMES_MAX];
+    int frameCount;
     Value stack[STACK_MAX];
     /**
      * Stack pointer

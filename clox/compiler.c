@@ -180,12 +180,11 @@ ParseRule rules[] = {
  * A single-pass compiler that translates source directly into bytecode, does not build AST.
  * Syntax analyzing uses **Pratt parsing algorithm**.
  */
-ObjFunction *compile(const char *source, Chunk *chunk)
+ObjFunction *compile(const char *source)
 {
     initScanner(source);
     Compiler compiler;
     initCompiler(&compiler, TYPE_SCRIPT);
-    compileChunk = chunk;
 
     parser.hadError = false;
     parser.panicMode = false;
