@@ -110,6 +110,7 @@ static void expressionStatement();
 static void ifStatement();
 static void whileStatement();
 static void forStatement();
+static void returnStatement();
 static void binary(bool canAssign);
 static void call(bool canAssign);
 static uint8_t argumentList();
@@ -405,6 +406,10 @@ static void statement()
     {
         ifStatement();
     }
+    else if (match(TOKEN_RETURN))
+    {
+        returnStatement();
+    }
     else if (match(TOKEN_WHILE))
     {
         whileStatement();
@@ -532,6 +537,25 @@ static void forStatement()
     }
 
     endScope();
+}
+
+static void returnStatement()
+{
+    if (current->type == TYPE_SCRIPT)
+    {
+        error("Can't return from top-level code.");
+    }
+
+    if (match(TOKEN_SEMICOLON))
+    {
+        emitReturn();
+    }
+    else
+    {
+        expression();
+        consume(TOKEN_SEMICOLON, "Expect ';' after return value.");
+        emitByte(OP_RETURN);
+    }
 }
 
 static void expression()
