@@ -42,7 +42,7 @@ void freeVM()
 InterpretResult interpret(const char *source)
 {
     ObjFunction *function = compile(source);
-    if (function != NULL)
+    if (function == NULL)
     {
         return INTERPRET_COMPILE_ERROR;
     }
