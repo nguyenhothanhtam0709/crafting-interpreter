@@ -102,7 +102,7 @@ static InterpretResult run()
 /**
  * Return current instruction and advance instruction pointer
  */
-#define READ_BYTE() (*(frame->ip++))
+#define READ_BYTE() (*frame->ip++)
 /**
  * Read the next byte from the bytecode, treat the resulting number as an index,
  * and look up the corresponding Value in the chunk’s constant table.
@@ -151,7 +151,8 @@ static InterpretResult run()
         }
         printf("\n");
 
-        disassembleInstruction(&frame->function->chunk, (int)(frame->ip - frame->function->chunk.code));
+        disassembleInstruction(&frame->function->chunk,
+                               (int)(frame->ip - frame->function->chunk.code));
 #endif
 
         uint8_t instruction;

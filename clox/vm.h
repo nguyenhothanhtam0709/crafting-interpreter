@@ -23,14 +23,20 @@ typedef struct
      */
     uint8_t *ip;
     /**
-     * Local stack pointer
+     * Local stack pointer, or the first slot of this stack frame in the stack
      */
     Value *slots;
 } CallFrame;
 
 typedef struct
 {
+    /**
+     * Call stack
+     */
     CallFrame frames[FRAMES_MAX];
+    /**
+     * Stack frame count
+     */
     int frameCount;
     Value stack[STACK_MAX];
     /**

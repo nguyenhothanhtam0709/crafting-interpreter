@@ -60,11 +60,19 @@ typedef enum
     TYPE_SCRIPT // Top-level function that wraps all bytecode
 } FunctionType;
 
-typedef struct
+/**
+ *  @details Creating a separate **Compiler** for each function being compiled to handle compiling multiple functions nested within each other.
+ */
+typedef struct Compiler
 {
+
+    struct Compiler *enclosing;
+
     ObjFunction *function; // Top-level function that wraps all bytecode
     FunctionType type;
-
+    /**
+     * Save local variable to resolve local variable at compile time
+     */
     Local locals[UINT8_COUNT];
     /**
      * Tracking how many locals are in scope—how many of those array slots are in use.
@@ -94,6 +102,7 @@ static ObjFunction *endCompiler();
 static void beginScope();
 static void endScope();
 static void declaration();
+static void funcDeclaration();
 static void varDeclaration();
 static void statement();
 static void printStatement();
@@ -123,6 +132,7 @@ static void namedVariable(Token name, bool canAssign);
 static void variable(bool canAssign);
 static void expression();
 static void block();
+static void function(FunctionType type);
 static void emitReturn();
 static uint8_t makeConstant(Value value);
 static void emitConstant(Value value);
@@ -313,6 +323,7 @@ static ObjFunction *endCompiler()
     }
 #endif
 
+    current = current->enclosing;
     return function;
 }
 
@@ -337,7 +348,11 @@ static void endScope()
 
 static void declaration()
 {
-    if (match(TOKEN_VAR))
+    if (match(TOKEN_FUN))
+    {
+        funcDeclaration();
+    }
+    else if (match(TOKEN_VAR))
     {
         varDeclaration();
     }
@@ -350,6 +365,14 @@ static void declaration()
     {
         synchronize(); // error recovery for parser
     }
+}
+
+static void funcDeclaration()
+{
+    uint8_t global = parseVariable("Expect function name");
+    markInitialized();
+    function(TYPE_FUNCTION);
+    defineVariable(global);
 }
 
 static void varDeclaration()
@@ -522,6 +545,36 @@ static void block()
     }
 
     consume(TOKEN_RIGHT_BRACE, "Expect '}' after block.");
+}
+
+static void function(FunctionType type)
+{
+    Compiler compiler;
+    initCompiler(&compiler, type);
+    beginScope();
+
+    consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
+    if (!check(TOKEN_RIGHT_PAREN))
+    {
+        //< Parse parameters
+        do
+        {
+            current->function->arity++;
+            if (current->function->arity > 255)
+            {
+                errorAtCurrent("Can't have more than 255 parameters.");
+            }
+            uint8_t constant = parseVariable("Expect parameter name.");
+            defineVariable(constant); // Define parameter as local variable
+        } while (match(TOKEN_COMMA));
+        //<
+    }
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after parameters.");
+    consume(TOKEN_LEFT_BRACE, "Expect '{' before function body.");
+    block();
+
+    ObjFunction *function = endCompiler();
+    emitBytes(OP_CONSTANT, makeConstant(OBJ_VAL(function)));
 }
 
 static void binary(bool canAssign)
@@ -825,6 +878,11 @@ static void addLocal(Token name)
  */
 static void markInitialized()
 {
+    if (current->scopeDepth == 0)
+    {
+        return;
+    }
+
     current->locals[current->localCount - 1].depth = current->scopeDepth;
 }
 
@@ -876,6 +934,12 @@ static void emitConstant(Value value)
 
 static void initCompiler(Compiler *compiler, FunctionType type)
 {
+    compiler->enclosing = current;
+    if (type != TYPE_SCRIPT)
+    {
+        current->function->name = copyString(parser.previous.start,
+                                             parser.previous.length);
+    }
     compiler->function = NULL;
     compiler->type = type;
     compiler->localCount = 0;
