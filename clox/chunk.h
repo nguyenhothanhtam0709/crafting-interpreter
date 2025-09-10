@@ -33,6 +33,7 @@ typedef enum
     OP_JUMP,          // unconditional jump
     OP_JUMP_IF_FALSE, // jump by offset if value is falsey
     OP_LOOP,          // loop, actually it is a backward jump
+    OP_CALL,          // invoke function
     OP_RETURN
 } OpCode;
 
