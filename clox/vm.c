@@ -140,7 +140,7 @@ static void concatenate()
 static InterpretResult run()
 {
     /**
-     * Current stack frame
+     * Stack frame of current invoked function
      */
     CallFrame *frame = &vm.frames[vm.frameCount - 1];
 
@@ -372,7 +372,7 @@ static InterpretResult run()
             {
                 return INTERPRET_RUNTIME_ERROR;
             }
-            frame = &vm.frames[vm.frameCount - 1]; // Pop the stack frame after invoking function successfully
+            frame = &vm.frames[vm.frameCount - 1]; // Assign the stack frame of current invoked function to `frame`.
             break;
         }
         case OP_RETURN:
@@ -387,7 +387,7 @@ static InterpretResult run()
 
             vm.stackTop = frame->slots;
             push(result);
-            frame = &vm.frames[vm.frameCount - 1];
+            frame = &vm.frames[vm.frameCount - 1]; // Assign the stack frame of the callee after executing `return` statement.
             break;
         }
         }
