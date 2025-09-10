@@ -71,7 +71,7 @@ static Value peek(int distance)
 }
 
 /**
- * Invoke function
+ * Setup stack frame for called function before executing it
  */
 static bool call(ObjFunction *function, int argCount)
 {
