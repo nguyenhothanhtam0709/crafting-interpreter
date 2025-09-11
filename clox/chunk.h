@@ -20,6 +20,8 @@ typedef enum
     OP_GET_GLOBAL,
     OP_DEFINE_GLOBAL, // define global variable
     OP_SET_GLOBAL,
+    OP_GET_UPVALUE, // resolve upvalue for a closure
+    OP_SET_UPVALUE, // resolve upvalue for a closure
     OP_EQUAL,
     OP_GREATER,
     OP_LESS,

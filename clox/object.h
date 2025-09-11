@@ -46,6 +46,10 @@ typedef struct
      */
     int arity;
     /**
+     * Number of upvalue of this function
+     */
+    int upvalueCount;
+    /**
      * Point to the first bytecode of the function
      */
     Chunk chunk;
