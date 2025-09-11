@@ -17,7 +17,7 @@ typedef struct
     /**
      * The function being called
      */
-    ObjFunction *function;
+    ObjClosure *closure;
     /**
      * Caller's current instruction pointer. When we return from a function, the VM will jump to the ip of the caller’s CallFrame and resume from there.
      */
@@ -53,6 +53,8 @@ typedef struct
      * @see https://craftinginterpreters.com/hash-tables.html#string-interning
      */
     Table strings;
+
+    ObjUpvalue *openUpvalues;
     /**
      * List of all objects stored in heap
      */
