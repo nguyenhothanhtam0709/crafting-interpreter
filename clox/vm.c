@@ -113,9 +113,9 @@ static bool callValue(Value callee, int argCount)
     {
         switch (OBJ_TYPE(callee))
         {
-        case OBJ_FUNCTION:
+        case OBJ_CLOSURE:
         {
-            return call(AS_FUNCTION(callee), argCount);
+            return call(AS_CLOSURE(callee), argCount);
         }
         case OBJ_NATIVE:
         {
