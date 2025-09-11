@@ -53,6 +53,8 @@ typedef struct
      * @see https://craftinginterpreters.com/hash-tables.html#string-interning
      */
     Table strings;
+
+    ObjUpvalue *openUpvalues;
     /**
      * List of all objects stored in heap
      */

@@ -43,6 +43,11 @@ typedef struct ObjUpvalue
 {
     Obj obj;
     Value *location;
+    /**
+     * Save closure variable after it is popped out of stack frame
+     */
+    Value closed;
+    struct ObjUpvalue *next;
 } ObjUpvalue;
 
 /**
