@@ -23,7 +23,8 @@ typedef enum
     OBJ_CLOSURE,
     OBJ_FUNCTION,
     OBJ_NATIVE, // native function
-    OBJ_STRING
+    OBJ_STRING,
+    OBJ_UPVALUE
 } ObjType;
 
 /**
@@ -34,6 +35,15 @@ struct Obj
     ObjType type;
     struct Obj *next;
 };
+
+/**
+ * Runtime representation for upvalues
+ */
+typedef struct ObjUpvalue
+{
+    Obj obj;
+    Value *location;
+} ObjUpvalue;
 
 /**
  * Lox function, all functions are wrapped in ObjClosure
@@ -63,6 +73,8 @@ typedef struct
 {
     Obj obj;
     ObjFunction *function;
+    ObjUpvalue **upvalues;
+    int upvalueCount;
 } ObjClosure;
 
 typedef Value (*NativeFn)(int argCount, Value *args);
@@ -92,6 +104,7 @@ ObjFunction *newFunction();
 ObjNative *newNative(NativeFn function);
 ObjString *takeString(char *chars, int length);
 ObjString *copyString(const char *chars, int length);
+ObjUpvalue *newUpvalue(Value *slot);
 void printObj(Value value);
 
 static inline bool isObjType(Value value, ObjType type)
