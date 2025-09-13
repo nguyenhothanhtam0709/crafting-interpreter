@@ -59,6 +59,11 @@ typedef struct
      * List of all objects stored in heap
      */
     Obj *objects;
+    //> Gray stack for tracing referenced object
+    int grayCount;
+    int grayCapacity;
+    Obj **grayStack;
+    //<
 } VM;
 
 typedef enum
