@@ -56,9 +56,22 @@ typedef struct
 
     ObjUpvalue *openUpvalues;
     /**
+     * Bytes allocated in heap
+     */
+    size_t bytesAllocated;
+    /**
+     * The threshold of bytes allocated that triggers the next garbage collection.
+     */
+    size_t nextGC;
+    /**
      * List of all objects stored in heap
      */
     Obj *objects;
+    //> Gray stack for tracing referenced object
+    int grayCount;
+    int grayCapacity;
+    Obj **grayStack;
+    //<
 } VM;
 
 typedef enum
