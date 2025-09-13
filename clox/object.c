@@ -33,7 +33,10 @@ static ObjString *allocateString(char *chars, int length, uint32_t hash)
     string->length = length;
     string->chars = chars;
     string->hash = hash;
+
+    push(OBJ_VAL(string));                    // push value to stack to prevent it from being garbage collected when vm.strings is being resized (re-allocated).
     tableSet(&(vm.strings), string, NIL_VAL); // save string to global string pool
+    pop();
     return string;
 }
 
