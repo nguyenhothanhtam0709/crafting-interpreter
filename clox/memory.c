@@ -7,6 +7,8 @@
 #include "debug.h"
 #endif
 
+static void freeObject(Obj *object);
+
 void *reallocate(void *pointer, size_t oldSize, size_t newSize)
 {
     if (newSize > oldSize)
@@ -143,6 +145,39 @@ void markValue(Value value)
     }
 }
 
+/**
+ * @brief Sweeping unused objects
+ */
+static void sweep()
+{
+    Obj *previous = NULL;
+    Obj *object = vm.objects;
+    while (object != NULL)
+    {
+        if (object->isMarked)
+        {
+            object->isMarked = false; // Mark object is not marked, preparing for next gc cycle.
+            previous = object;
+            object = object->next;
+        }
+        else
+        {
+            Obj *unreached = object;
+            object = object->next;
+            if (previous != NULL)
+            {
+                previous->next = object;
+            }
+            else
+            {
+                vm.objects = object;
+            }
+
+            freeObject(unreached);
+        }
+    }
+}
+
 void collectGarbage()
 {
 #ifdef DEBUG_LOG_GC
@@ -151,6 +186,8 @@ void collectGarbage()
 
     markRoots();
     traceReferences();
+    tableRemoveWhite(&vm.strings);
+    sweep();
 
 #ifdef DEBUG_LOG_GC
     printf("-- gc end\n");
