@@ -6,15 +6,38 @@
 #include "value.h"
 #include "chunk.h"
 
-#define STACK_MAX 256
+#define FRAMES_MAX 64
+#define STACK_MAX (FRAMES_MAX * UINT8_COUNT)
+
+/**
+ * A stack frame
+ */
+typedef struct
+{
+    /**
+     * The function being called
+     */
+    ObjClosure *closure;
+    /**
+     * Caller's current instruction pointer. When we return from a function, the VM will jump to the ip of the caller’s CallFrame and resume from there.
+     */
+    uint8_t *ip;
+    /**
+     * Local stack pointer, or the first slot of this stack frame in the stack
+     */
+    Value *slots;
+} CallFrame;
 
 typedef struct
 {
-    Chunk *chunk;
     /**
-     * Instruction pointer or program counter
+     * Call stack
      */
-    uint8_t *ip;
+    CallFrame frames[FRAMES_MAX];
+    /**
+     * Stack frame count
+     */
+    int frameCount;
     Value stack[STACK_MAX];
     /**
      * Stack pointer
@@ -30,10 +53,25 @@ typedef struct
      * @see https://craftinginterpreters.com/hash-tables.html#string-interning
      */
     Table strings;
+
+    ObjUpvalue *openUpvalues;
+    /**
+     * Bytes allocated in heap
+     */
+    size_t bytesAllocated;
+    /**
+     * The threshold of bytes allocated that triggers the next garbage collection.
+     */
+    size_t nextGC;
     /**
      * List of all objects stored in heap
      */
     Obj *objects;
+    //> Gray stack for tracing referenced object
+    int grayCount;
+    int grayCapacity;
+    Obj **grayStack;
+    //<
 } VM;
 
 typedef enum

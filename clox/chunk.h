@@ -2,7 +2,6 @@
 #define clox_chunk_h
 
 #include "common.h"
-#include "memory.h"
 #include "value.h"
 
 /**
@@ -21,6 +20,8 @@ typedef enum
     OP_GET_GLOBAL,
     OP_DEFINE_GLOBAL, // define global variable
     OP_SET_GLOBAL,
+    OP_GET_UPVALUE, // resolve upvalue for a closure
+    OP_SET_UPVALUE, // resolve upvalue for a closure
     OP_EQUAL,
     OP_GREATER,
     OP_LESS,
@@ -34,6 +35,9 @@ typedef enum
     OP_JUMP,          // unconditional jump
     OP_JUMP_IF_FALSE, // jump by offset if value is falsey
     OP_LOOP,          // loop, actually it is a backward jump
+    OP_CALL,          // invoke function
+    OP_CLOSURE,       // define closure
+    OP_CLOSE_UPVALUE,
     OP_RETURN
 } OpCode;
 
