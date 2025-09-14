@@ -102,10 +102,10 @@ static bool call(ObjClosure *closure, int argCount)
         return false;
     }
 
-    CallFrame *frame = &vm.frames[vm.frameCount++];
+    CallFrame *frame = &vm.frames[vm.frameCount++]; // Get stack frame for function being called
     frame->closure = closure;
-    frame->ip = closure->function->chunk.code;
-    frame->slots = vm.stackTop - argCount - 1;
+    frame->ip = closure->function->chunk.code; // Set instruction pointer to the first bytecode of function being called
+    frame->slots = vm.stackTop - argCount - 1; // Set local stack pointer of current function
     return true;
 }
 
