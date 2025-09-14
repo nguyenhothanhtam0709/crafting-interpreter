@@ -474,7 +474,7 @@ static InterpretResult run()
             }
             break;
         }
-        case OP_CLOSE_CLOSURE:
+        case OP_CLOSE_UPVALUE:
         {
             closeUpvalues(vm.stackTop - 1);
             pop();

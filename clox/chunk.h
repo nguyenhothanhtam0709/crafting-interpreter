@@ -37,7 +37,7 @@ typedef enum
     OP_LOOP,          // loop, actually it is a backward jump
     OP_CALL,          // invoke function
     OP_CLOSURE,       // define closure
-    OP_CLOSE_CLOSURE,
+    OP_CLOSE_UPVALUE,
     OP_RETURN
 } OpCode;
 
