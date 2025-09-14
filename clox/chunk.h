@@ -38,7 +38,8 @@ typedef enum
     OP_CALL,          // invoke function
     OP_CLOSURE,       // define closure
     OP_CLOSE_UPVALUE,
-    OP_RETURN
+    OP_RETURN,
+    OP_CLASS,
 } OpCode;
 
 /**
