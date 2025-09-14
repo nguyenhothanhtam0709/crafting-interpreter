@@ -14,10 +14,15 @@ static Obj *allocateObject(size_t size, ObjType type)
 {
     Obj *object = (Obj *)reallocate(NULL, 0, size);
     object->type = type;
+    object->isMarked = false;
 
     // Save heap-allocated objects to list for later used in garbage collector
     object->next = vm.objects;
     vm.objects = object;
+
+#ifdef DEBUG_LOG_GC
+    printf("%p allocate %zu for %d\n", (void *)object, size, type);
+#endif
 
     return object;
 }
@@ -28,7 +33,10 @@ static ObjString *allocateString(char *chars, int length, uint32_t hash)
     string->length = length;
     string->chars = chars;
     string->hash = hash;
+
+    push(OBJ_VAL(string));                    // push value to stack to prevent it from being garbage collected when vm.strings is being resized (re-allocated).
     tableSet(&(vm.strings), string, NIL_VAL); // save string to global string pool
+    pop();
     return string;
 }
 
@@ -50,9 +58,25 @@ ObjFunction *newFunction()
 {
     ObjFunction *function = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
     function->arity = 0;
+    function->upvalueCount = 0;
     function->name = NULL;
     initChunk(&function->chunk);
     return function;
+}
+
+ObjClosure *newClosure(ObjFunction *function)
+{
+    ObjUpvalue **upvalues = ALLOCATE(ObjUpvalue *, function->upvalueCount);
+    for (int i = 0; i < function->upvalueCount; i++)
+    {
+        upvalues[i] = NULL;
+    }
+
+    ObjClosure *closure = ALLOCATE_OBJ(ObjClosure, OBJ_CLOSURE);
+    closure->function = function;
+    closure->upvalues = upvalues;
+    closure->upvalueCount = function->upvalueCount;
+    return closure;
 }
 
 ObjNative *newNative(NativeFn function)
@@ -94,6 +118,15 @@ ObjString *copyString(const char *chars, int length)
     return allocateString(heapChars, length, hash);
 }
 
+ObjUpvalue *newUpvalue(Value *slot)
+{
+    ObjUpvalue *upvalue = ALLOCATE_OBJ(ObjUpvalue, OBJ_UPVALUE);
+    upvalue->location = slot;
+    upvalue->next = NULL;
+    upvalue->closed = NIL_VAL;
+    return upvalue;
+}
+
 static void printFunction(ObjFunction *function)
 {
     if (function->name == NULL)
@@ -109,6 +142,11 @@ void printObj(Value value)
 {
     switch (OBJ_TYPE(value))
     {
+    case OBJ_CLOSURE:
+    {
+        printFunction(AS_CLOSURE(value)->function);
+        break;
+    }
     case OBJ_FUNCTION:
     {
         printFunction(AS_FUNCTION(value));
@@ -122,6 +160,11 @@ void printObj(Value value)
     case OBJ_STRING:
     {
         printf("%s", AS_CSTRING(value));
+        break;
+    }
+    case OBJ_UPVALUE:
+    {
+        printf("upvalue");
         break;
     }
     }

@@ -17,7 +17,7 @@ typedef struct
     /**
      * The function being called
      */
-    ObjFunction *function;
+    ObjClosure *closure;
     /**
      * Caller's current instruction pointer. When we return from a function, the VM will jump to the ip of the caller’s CallFrame and resume from there.
      */
@@ -53,10 +53,25 @@ typedef struct
      * @see https://craftinginterpreters.com/hash-tables.html#string-interning
      */
     Table strings;
+
+    ObjUpvalue *openUpvalues;
+    /**
+     * Bytes allocated in heap
+     */
+    size_t bytesAllocated;
+    /**
+     * The threshold of bytes allocated that triggers the next garbage collection.
+     */
+    size_t nextGC;
     /**
      * List of all objects stored in heap
      */
     Obj *objects;
+    //> Gray stack for tracing referenced object
+    int grayCount;
+    int grayCapacity;
+    Obj **grayStack;
+    //<
 } VM;
 
 typedef enum

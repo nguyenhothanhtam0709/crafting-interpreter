@@ -7,6 +7,11 @@
 
 #define DEBUG_PRINT_CODE
 #define DEBUG_TRACE_EXECUTION
+/**
+ * `Stress test” mode for the garbage collector. When this flag is defined, the GC runs as often as it possibly can.
+ */
+#define DEBUG_STRESS_GC
+#define DEBUG_LOG_GC
 
 #define UINT8_COUNT (UINT8_MAX + 1)
 
