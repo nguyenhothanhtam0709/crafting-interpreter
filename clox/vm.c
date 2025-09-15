@@ -125,6 +125,7 @@ static bool callValue(Value callee, int argCount)
         case OBJ_BOUND_METHOD:
         {
             ObjBoundMethod *bound = AS_BOUND_METHOD(callee);
+            vm.stackTop[-argCount - 1] = bound->receiver; // Use slot 0 of method's stack for saving `this` pointer.
             return call(bound->method, argCount);
         }
         case OBJ_CLASS: // Invoke constructor of a class
@@ -175,6 +176,9 @@ static bool bindMethod(ObjClass *klass, ObjString *name)
     return true;
 }
 
+/**
+ * Capture upvalue and save it into a linked list
+ */
 static ObjUpvalue *captureUpvalue(Value *local)
 {
     ObjUpvalue *preUpvalue = NULL;
@@ -204,6 +208,9 @@ static ObjUpvalue *captureUpvalue(Value *local)
     return createdUpvalue;
 }
 
+/**
+ * @brief Allocate all upvalues into heap after out of scope
+ */
 static void closeUpvalues(Value *last)
 {
     while (vm.openUpvalues != NULL && vm.openUpvalues->location >= last)
