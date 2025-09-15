@@ -38,10 +38,12 @@ typedef enum
     OP_JUMP_IF_FALSE, // jump by offset if value is falsey
     OP_LOOP,          // loop, actually it is a backward jump
     OP_CALL,          // invoke function
+    OP_INVOKE, 
     OP_CLOSURE,       // define closure
     OP_CLOSE_UPVALUE,
     OP_RETURN,
     OP_CLASS,
+    OP_METHOD, // define method for a class
 } OpCode;
 
 /**

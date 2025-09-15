@@ -53,7 +53,8 @@ typedef struct
      * @see https://craftinginterpreters.com/hash-tables.html#string-interning
      */
     Table strings;
-
+    /** Constant for `init` */
+    ObjString* initString;
     ObjUpvalue *openUpvalues;
     /**
      * Bytes allocated in heap
