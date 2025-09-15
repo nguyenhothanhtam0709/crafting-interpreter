@@ -54,6 +54,13 @@ static uint32_t hashString(const char *key, int length)
     return hash;
 }
 
+ObjClass *newClass(ObjString *name)
+{
+    ObjClass *klass = ALLOCATE_OBJ(ObjClass, OBJ_CLASS);
+    klass->name = name;
+    return klass;
+}
+
 ObjFunction *newFunction()
 {
     ObjFunction *function = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
@@ -62,6 +69,14 @@ ObjFunction *newFunction()
     function->name = NULL;
     initChunk(&function->chunk);
     return function;
+}
+
+ObjInstance *newInstance(ObjClass *klass)
+{
+    ObjInstance *instance = ALLOCATE_OBJ(ObjInstance, OBJ_INSTANCE);
+    instance->klass = klass;
+    initTable(&(instance->fields));
+    return instance;
 }
 
 ObjClosure *newClosure(ObjFunction *function)
@@ -142,6 +157,11 @@ void printObj(Value value)
 {
     switch (OBJ_TYPE(value))
     {
+    case OBJ_CLASS:
+    {
+        printf("%s", AS_CLASS(value)->name->chars);
+        break;
+    }
     case OBJ_CLOSURE:
     {
         printFunction(AS_CLOSURE(value)->function);
@@ -150,6 +170,12 @@ void printObj(Value value)
     case OBJ_FUNCTION:
     {
         printFunction(AS_FUNCTION(value));
+        break;
+    }
+    case OBJ_INSTANCE:
+    {
+        printf("%s instance",
+               AS_INSTANCE(value)->klass->name->chars);
         break;
     }
     case OBJ_NATIVE:
