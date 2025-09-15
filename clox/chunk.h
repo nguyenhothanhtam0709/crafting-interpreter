@@ -22,6 +22,8 @@ typedef enum
     OP_SET_GLOBAL,
     OP_GET_UPVALUE, // resolve upvalue for a closure
     OP_SET_UPVALUE, // resolve upvalue for a closure
+    OP_GET_PROPERTY,
+    OP_SET_PROPERTY,
     OP_EQUAL,
     OP_GREATER,
     OP_LESS,
