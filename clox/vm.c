@@ -231,7 +231,7 @@ static bool isFalsey(Value value)
 static void concatenate()
 {
     ObjString *b = AS_STRING(peek(0)); // keep this value in stack to preventing it from being garbage collected before completing the string concatenation.
-    ObjString *a = AS_STRING(peek(0)); // like above
+    ObjString *a = AS_STRING(peek(1)); // like above
 
     int length = a->length + b->length;
     char *chars = ALLOCATE(char, length + 1);
