@@ -652,6 +652,28 @@ static InterpretResult run()
             push(OBJ_VAL(newClass(READ_STRING())));
             break;
         }
+        case OP_INHERIT:
+        {
+            Value superclass = peek(1);
+            if (!IS_CLASS(superclass))
+            {
+                runtimeError("Superclass must be a class.");
+                return INTERPRET_RUNTIME_ERROR;
+            }
+
+            ObjClass *subclass = AS_CLASS(peek(0));
+
+            /// @brief `copy-down inheritance`
+            ///
+            /// @note When the subclass is declared, we copy all of the inherited class’s methods down into the subclass’s own method table.
+            /// It’s simple and fast, but, like most optimizations, you get to use it only under certain constraints.
+            /// It works in Lox because Lox classes are closed. Once a class declaration is finished executing,
+            /// the set of methods for that class can never change.
+            tableAddAll(&(AS_CLASS(superclass)->methods), &(subclass->methods));
+
+            pop(); // subclass
+            break;
+        }
         case OP_METHOD:
         {
             defineMethod(READ_STRING());
