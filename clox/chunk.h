@@ -24,6 +24,7 @@ typedef enum
     OP_SET_UPVALUE, // resolve upvalue for a closure
     OP_GET_PROPERTY,
     OP_SET_PROPERTY,
+    OP_GET_SUPER, // Get method from `super`
     OP_EQUAL,
     OP_GREATER,
     OP_LESS,
@@ -39,7 +40,8 @@ typedef enum
     OP_LOOP,          // loop, actually it is a backward jump
     OP_CALL,          // invoke function
     OP_INVOKE,
-    OP_CLOSURE, // define closure
+    OP_SUPER_INVOKE, // invoke method of superclass
+    OP_CLOSURE,      // define closure
     OP_CLOSE_UPVALUE,
     OP_RETURN,
     OP_CLASS,
