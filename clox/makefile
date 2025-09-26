@@ -1,5 +1,5 @@
-CC = gcc
-CFLAGS = -Wall -Wextra -O2
+CC = clang
+CFLAGS = -std=c17 -Wall -Wextra -O2
 
 # Project settings
 TARGET = main
