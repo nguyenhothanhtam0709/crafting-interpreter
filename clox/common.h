@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define DEBUG_PRINT_CODE
-#define DEBUG_TRACE_EXECUTION
+/// @brief Enable nan boxing
+#define NAN_BOXING
 /**
  * `Stress test” mode for the garbage collector. When this flag is defined, the GC runs as often as it possibly can.
  */
