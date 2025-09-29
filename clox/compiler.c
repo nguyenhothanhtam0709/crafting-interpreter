@@ -773,6 +773,17 @@ static void whileStatement()
     statement();
     emitLoop(loopStart); // emit bytecode for jumping to first bytecode of while loop
 
+    ScopeJumpInstruction *jumpInst = currentScope->jumpInstructions;
+    while (jumpInst != NULL)
+    {
+        if (jumpInst->type == FCS_BREAK)
+            patchBreakStatement(jumpInst->jumpOffset);
+        else if (jumpInst->type == FCS_CONTINUE)
+            patchContinueStatement(jumpInst->jumpOffset, loopStart);
+
+        jumpInst = jumpInst->next;
+    }
+
     patchJump(exitJump);
     emitByte(OP_POP);
 
