@@ -76,6 +76,22 @@ typedef enum
     TYPE_SCRIPT // Top-level function that wraps all bytecode
 } FunctionType;
 
+typedef enum
+{
+    SCOPE_GLOBAL, // global scope
+    SCOPE_CLASS,
+    SCOPE_FUNCTION, // function scope
+    SCOPE_LOOP,     // inside for-loop or while-loop
+    SCOPE_BLOCK,    // scope opened by block statement
+} ScopeType;
+
+typedef enum
+{
+    FCS_BREAK,
+    FCS_CONTINUE,
+    FCS_THROW,
+} FlowControlStatement;
+
 /**
  *  @details Creating a separate **Compiler** for each function being compiled to handle compiling multiple functions nested within each other.
  */
@@ -111,9 +127,27 @@ typedef struct ClassCompiler
     bool hasSuperclass;
 } ClassCompiler;
 
+typedef struct ScopeJumpInstruction
+{
+    struct ScopeJumpInstruction *next;
+    int jumpOffset;
+    FlowControlStatement type;
+} ScopeJumpInstruction;
+
+typedef struct ScopeCompiler
+{
+    struct ScopeCompiler *enclosing;
+    ScopeType type;
+
+    /// @brief List of instruction that can jump out of current scope, used to patch pump
+    /// at the end of scope
+    ScopeJumpInstruction *jumpInstructions;
+} ScopeCompiler;
+
 Parser parser;
 Compiler *current = NULL;
 ClassCompiler *currentClass = NULL;
+ScopeCompiler *currentScope = NULL;
 Chunk *compileChunk;
 
 static void advance();
@@ -122,12 +156,18 @@ static bool match(TokenType type);
 static bool check(TokenType type);
 static void emitByte(uint8_t byte);
 static void emitBytes(uint8_t byte1, uint8_t byte2);
+static int emitBreak();
+static int emitContinue();
 static void emitLoop(int loopStart);
 static int emitJump(uint8_t instruction);
 static void patchJump(int offset);
 static ObjFunction *endCompiler();
 static void beginScope();
 static void endScope();
+static void initScopeCompiler(ScopeType scopeType);
+static void clearScopeCompiler();
+static bool isInsideLoopBody();
+static ScopeCompiler *latestLoopScope();
 static void declaration();
 static void classDeclaration();
 static void method();
@@ -239,10 +279,12 @@ ObjFunction *compile(const char *source)
 
     advance();
 
+    initScopeCompiler(SCOPE_GLOBAL);
     while (!match(TOKEN_EOF))
     {
         declaration();
     }
+    clearScopeCompiler();
 
     consume(TOKEN_EOF, "Expect end of expression.");
     ObjFunction *function = endCompiler();
@@ -339,6 +381,60 @@ static int emitJump(uint8_t instruction)
     return currentChunk()->count - 2; // index of jump bytecode.
 }
 
+static int emitBreak()
+{
+    ScopeCompiler *cur = latestLoopScope();
+    if (cur == NULL)
+        return -1;
+
+    ScopeJumpInstruction *inst = malloc(sizeof(ScopeJumpInstruction));
+    inst->type = FCS_BREAK;
+    inst->jumpOffset = emitJump(OP_JUMP);
+    inst->next = cur->jumpInstructions;
+    cur->jumpInstructions = inst;
+
+    return inst->jumpOffset;
+}
+
+static int emitContinue()
+{
+    ScopeCompiler *cur = latestLoopScope();
+    if (cur == NULL)
+        return -1;
+
+    ScopeJumpInstruction *inst = malloc(sizeof(ScopeJumpInstruction));
+    inst->type = FCS_CONTINUE;
+
+    emitByte(0xff);
+    emitByte(0xff);
+    emitByte(0xff);
+    inst->jumpOffset = currentChunk()->count - 3; // index of jump bytecode.
+
+    inst->next = cur->jumpInstructions;
+    cur->jumpInstructions = inst;
+
+    return 0;
+}
+
+static void patchBreakStatement(int offset)
+{
+    return patchJump(offset);
+}
+
+static void patchContinueStatement(int jumpInstOffset,
+                                   int offset)
+{
+    int jump = jumpInstOffset - offset + 3; // calculate jump
+    if (jump > UINT16_MAX)
+    {
+        error("Too much code to jump over.");
+    }
+
+    currentChunk()->code[jumpInstOffset] = OP_LOOP;                // loop instruction
+    currentChunk()->code[jumpInstOffset + 1] = (jump >> 8) & 0xff; // left-most 8 bits of jump offset.
+    currentChunk()->code[jumpInstOffset + 2] = jump & 0xff;        // right-most 8 bits of jump offset.
+}
+
 /**
  * Patching jump offset to placeholder for jump bytecode.
  */
@@ -399,6 +495,58 @@ static void endScope()
         }
         current->localCount--;
     }
+}
+
+static void initScopeCompiler(ScopeType scopeType)
+{
+    ScopeCompiler *newScope = malloc(sizeof(ScopeCompiler));
+    newScope->enclosing = currentScope;
+    newScope->type = scopeType;
+    newScope->jumpInstructions = NULL;
+    currentScope = newScope;
+}
+
+static void clearScopeCompiler()
+{
+    ScopeCompiler *latestScope = currentScope;
+    currentScope = latestScope->enclosing;
+
+    ScopeJumpInstruction *jumpInst = latestScope->jumpInstructions;
+    while (jumpInst != NULL)
+    {
+        ScopeJumpInstruction *temp = jumpInst;
+        jumpInst = jumpInst->next;
+        free(temp);
+    }
+
+    free(latestScope);
+}
+
+static bool isInsideLoopBody()
+{
+    ScopeCompiler *cur = currentScope;
+    while (cur != NULL && cur->type == SCOPE_BLOCK)
+        cur = cur->enclosing;
+
+    if (cur == NULL)
+        return false;
+
+    if (cur->type == SCOPE_LOOP)
+        return true;
+
+    return false;
+}
+
+static ScopeCompiler *latestLoopScope()
+{
+    ScopeCompiler *cur = currentScope;
+    while (cur != NULL && cur->type == SCOPE_BLOCK)
+        cur = cur->enclosing;
+
+    if (cur != NULL && cur->type == SCOPE_LOOP)
+        return cur;
+
+    return NULL;
 }
 
 static void declaration()
@@ -544,10 +692,30 @@ static void statement()
     {
         forStatement();
     }
+    else if (match(TOKEN_BREAK))
+    {
+        if (!isInsideLoopBody())
+            error("Break statement can only be used inside loop body");
+
+        emitBreak();
+
+        consume(TOKEN_SEMICOLON, "Expect ';' after `break`");
+    }
+    else if (match(TOKEN_CONTINUE))
+    {
+        if (!isInsideLoopBody())
+            error("Continue statement can only be used inside loop body");
+
+        emitContinue();
+
+        consume(TOKEN_SEMICOLON, "Expect ';' after `continue`");
+    }
     else if (match(TOKEN_LEFT_BRACE))
     {
         beginScope();
+        initScopeCompiler(SCOPE_BLOCK);
         block();
+        clearScopeCompiler();
         endScope();
     }
     else
@@ -596,6 +764,7 @@ static void whileStatement()
 {
     int loopStart = currentChunk()->count; // jump offset to first bytecode of while loop
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
+    initScopeCompiler(SCOPE_LOOP);
     expression();
     consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
 
@@ -606,11 +775,14 @@ static void whileStatement()
 
     patchJump(exitJump);
     emitByte(OP_POP);
+
+    clearScopeCompiler();
 }
 
 static void forStatement()
 {
     beginScope();
+    initScopeCompiler(SCOPE_LOOP);
 
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
     if (match(TOKEN_SEMICOLON))
@@ -656,12 +828,24 @@ static void forStatement()
     statement();
     emitLoop(loopStart); // Jump to increment part
 
+    ScopeJumpInstruction *jumpInst = currentScope->jumpInstructions;
+    while (jumpInst != NULL)
+    {
+        if (jumpInst->type == FCS_BREAK)
+            patchBreakStatement(jumpInst->jumpOffset);
+        else if (jumpInst->type == FCS_CONTINUE)
+            patchContinueStatement(jumpInst->jumpOffset, loopStart);
+
+        jumpInst = jumpInst->next;
+    }
+
     if (exitJump != -1)
     {
         patchJump(exitJump);
         emitByte(OP_POP); // Pop the condition
     }
 
+    clearScopeCompiler();
     endScope();
 }
 
@@ -708,7 +892,12 @@ static void function(FunctionType type)
 {
     Compiler compiler;
     initCompiler(&compiler, type);
-    beginScope();
+    beginScope(); // [no-end-scope]
+
+    ScopeType scopeType = SCOPE_FUNCTION;
+    if (type == TYPE_SCRIPT)
+        scopeType = SCOPE_GLOBAL;
+    initScopeCompiler(scopeType);
 
     consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
     if (!check(TOKEN_RIGHT_PAREN))
@@ -729,6 +918,8 @@ static void function(FunctionType type)
     consume(TOKEN_RIGHT_PAREN, "Expect ')' after parameters.");
     consume(TOKEN_LEFT_BRACE, "Expect '{' before function body.");
     block();
+
+    clearScopeCompiler();
 
     ObjFunction *function = endCompiler();
     emitBytes(OP_CLOSURE, makeConstant(OBJ_VAL(function)));
