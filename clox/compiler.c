@@ -92,6 +92,23 @@ typedef enum
     FCS_THROW,
 } FlowControlStatement;
 
+typedef struct ScopeJumpInstruction
+{
+    struct ScopeJumpInstruction *next;
+    int jumpOffset;
+    FlowControlStatement type;
+} ScopeJumpInstruction;
+
+typedef struct ScopeCompiler
+{
+    struct ScopeCompiler *enclosing;
+    ScopeType type;
+    int depth;
+    /// @brief List of instruction that can jump out of current scope, used to patch pump
+    /// at the end of scope
+    ScopeJumpInstruction *jumpInstructions;
+} ScopeCompiler;
+
 /**
  *  @details Creating a separate **Compiler** for each function being compiled to handle compiling multiple functions nested within each other.
  */
@@ -119,6 +136,7 @@ typedef struct Compiler
      * Zero is the global scope, one is the first top-level block, two is inside that.
      */
     int scopeDepth;
+    ScopeCompiler *currentScope;
 } Compiler;
 
 typedef struct ClassCompiler
@@ -127,27 +145,9 @@ typedef struct ClassCompiler
     bool hasSuperclass;
 } ClassCompiler;
 
-typedef struct ScopeJumpInstruction
-{
-    struct ScopeJumpInstruction *next;
-    int jumpOffset;
-    FlowControlStatement type;
-} ScopeJumpInstruction;
-
-typedef struct ScopeCompiler
-{
-    struct ScopeCompiler *enclosing;
-    ScopeType type;
-
-    /// @brief List of instruction that can jump out of current scope, used to patch pump
-    /// at the end of scope
-    ScopeJumpInstruction *jumpInstructions;
-} ScopeCompiler;
-
 Parser parser;
 Compiler *current = NULL;
 ClassCompiler *currentClass = NULL;
-ScopeCompiler *currentScope = NULL;
 Chunk *compileChunk;
 
 static void advance();
@@ -162,10 +162,10 @@ static void emitLoop(int loopStart);
 static int emitJump(uint8_t instruction);
 static void patchJump(int offset);
 static ObjFunction *endCompiler();
-static void beginScope();
+static void beginScope(ScopeType scopeType);
 static void endScope();
-static void initScopeCompiler(ScopeType scopeType);
 static void clearScopeCompiler();
+static void emitOutScope(int scopeDepth);
 static bool isInsideLoopBody();
 static ScopeCompiler *latestLoopScope();
 static void declaration();
@@ -279,12 +279,10 @@ ObjFunction *compile(const char *source)
 
     advance();
 
-    initScopeCompiler(SCOPE_GLOBAL);
     while (!match(TOKEN_EOF))
     {
         declaration();
     }
-    clearScopeCompiler();
 
     consume(TOKEN_EOF, "Expect end of expression.");
     ObjFunction *function = endCompiler();
@@ -387,6 +385,8 @@ static int emitBreak()
     if (cur == NULL)
         return -1;
 
+    emitOutScope(cur->depth);
+
     ScopeJumpInstruction *inst = malloc(sizeof(ScopeJumpInstruction));
     inst->type = FCS_BREAK;
     inst->jumpOffset = emitJump(OP_JUMP);
@@ -401,6 +401,8 @@ static int emitContinue()
     ScopeCompiler *cur = latestLoopScope();
     if (cur == NULL)
         return -1;
+
+    emitOutScope(cur->depth);
 
     ScopeJumpInstruction *inst = malloc(sizeof(ScopeJumpInstruction));
     inst->type = FCS_CONTINUE;
@@ -471,13 +473,24 @@ static ObjFunction *endCompiler()
     return function;
 }
 
-static void beginScope()
+static void beginScope(ScopeType scopeType)
 {
     current->scopeDepth++;
+
+    //> Create new scope
+    ScopeCompiler *newScope = malloc(sizeof(ScopeCompiler));
+    newScope->enclosing = current->currentScope;
+    newScope->type = scopeType;
+    newScope->jumpInstructions = NULL;
+    newScope->depth = current->scopeDepth;
+    current->currentScope = newScope;
+    //<
 }
 
 static void endScope()
 {
+    clearScopeCompiler();
+
     current->scopeDepth--;
 
     // Pop all local variable of closed scope
@@ -497,19 +510,10 @@ static void endScope()
     }
 }
 
-static void initScopeCompiler(ScopeType scopeType)
-{
-    ScopeCompiler *newScope = malloc(sizeof(ScopeCompiler));
-    newScope->enclosing = currentScope;
-    newScope->type = scopeType;
-    newScope->jumpInstructions = NULL;
-    currentScope = newScope;
-}
-
 static void clearScopeCompiler()
 {
-    ScopeCompiler *latestScope = currentScope;
-    currentScope = latestScope->enclosing;
+    ScopeCompiler *latestScope = current->currentScope;
+    current->currentScope = latestScope->enclosing;
 
     ScopeJumpInstruction *jumpInst = latestScope->jumpInstructions;
     while (jumpInst != NULL)
@@ -522,9 +526,25 @@ static void clearScopeCompiler()
     free(latestScope);
 }
 
+/// @brief Emit out scope instruction
+static void emitOutScope(int scopeDepth)
+{
+    int localCount = current->localCount;
+    while (
+        localCount > 0 &&
+        current->locals[localCount - 1].depth > scopeDepth)
+    {
+        if (current->locals[localCount - 1].isCaptured)
+            emitByte(OP_CLOSE_UPVALUE);
+        else
+            emitByte(OP_POP);
+        localCount--;
+    }
+}
+
 static bool isInsideLoopBody()
 {
-    ScopeCompiler *cur = currentScope;
+    ScopeCompiler *cur = current->currentScope;
     while (cur != NULL && cur->type == SCOPE_BLOCK)
         cur = cur->enclosing;
 
@@ -539,7 +559,7 @@ static bool isInsideLoopBody()
 
 static ScopeCompiler *latestLoopScope()
 {
-    ScopeCompiler *cur = currentScope;
+    ScopeCompiler *cur = current->currentScope;
     while (cur != NULL && cur->type == SCOPE_BLOCK)
         cur = cur->enclosing;
 
@@ -600,7 +620,7 @@ static void classDeclaration()
             error("A class can't inherit from itself.");
         }
 
-        beginScope();
+        beginScope(SCOPE_CLASS);
         addLocal(syntheticToken("super")); // define `super` as an upvalue for all methods
         defineVariable(0);
 
@@ -712,10 +732,8 @@ static void statement()
     }
     else if (match(TOKEN_LEFT_BRACE))
     {
-        beginScope();
-        initScopeCompiler(SCOPE_BLOCK);
+        beginScope(SCOPE_BLOCK);
         block();
-        clearScopeCompiler();
         endScope();
     }
     else
@@ -764,36 +782,44 @@ static void whileStatement()
 {
     int loopStart = currentChunk()->count; // jump offset to first bytecode of while loop
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
-    initScopeCompiler(SCOPE_LOOP);
-    expression();
+    beginScope(SCOPE_LOOP);
+    expression(); // The condition
     consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
 
     int exitJump = emitJump(OP_JUMP_IF_FALSE);
-    emitByte(OP_POP);
+    emitByte(OP_POP); // Pop the condition
     statement();
     emitLoop(loopStart); // emit bytecode for jumping to first bytecode of while loop
 
-    ScopeJumpInstruction *jumpInst = currentScope->jumpInstructions;
+    //> Patch continue jump statement
+    ScopeJumpInstruction *contJumpInst = current->currentScope->jumpInstructions;
+    while (contJumpInst != NULL)
+    {
+        if (contJumpInst->type == FCS_CONTINUE)
+            patchContinueStatement(contJumpInst->jumpOffset, loopStart);
+        contJumpInst = contJumpInst->next;
+    }
+    //<
+
+    patchJump(exitJump);
+    emitByte(OP_POP); // Pop the condition
+
+    //> Patch break jump statement
+    ScopeJumpInstruction *jumpInst = current->currentScope->jumpInstructions;
     while (jumpInst != NULL)
     {
         if (jumpInst->type == FCS_BREAK)
             patchBreakStatement(jumpInst->jumpOffset);
-        else if (jumpInst->type == FCS_CONTINUE)
-            patchContinueStatement(jumpInst->jumpOffset, loopStart);
-
         jumpInst = jumpInst->next;
     }
+    //<
 
-    patchJump(exitJump);
-    emitByte(OP_POP);
-
-    clearScopeCompiler();
+    endScope();
 }
 
 static void forStatement()
 {
-    beginScope();
-    initScopeCompiler(SCOPE_LOOP);
+    beginScope(SCOPE_LOOP);
 
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
     if (match(TOKEN_SEMICOLON))
@@ -839,16 +865,15 @@ static void forStatement()
     statement();
     emitLoop(loopStart); // Jump to increment part
 
-    ScopeJumpInstruction *jumpInst = currentScope->jumpInstructions;
-    while (jumpInst != NULL)
+    //> Patch continue jump statement
+    ScopeJumpInstruction *contJumpInst = current->currentScope->jumpInstructions;
+    while (contJumpInst != NULL)
     {
-        if (jumpInst->type == FCS_BREAK)
-            patchBreakStatement(jumpInst->jumpOffset);
-        else if (jumpInst->type == FCS_CONTINUE)
-            patchContinueStatement(jumpInst->jumpOffset, loopStart);
-
-        jumpInst = jumpInst->next;
+        if (contJumpInst->type == FCS_CONTINUE)
+            patchContinueStatement(contJumpInst->jumpOffset, loopStart);
+        contJumpInst = contJumpInst->next;
     }
+    //<
 
     if (exitJump != -1)
     {
@@ -856,7 +881,16 @@ static void forStatement()
         emitByte(OP_POP); // Pop the condition
     }
 
-    clearScopeCompiler();
+    //> Patch break jump statement
+    ScopeJumpInstruction *jumpInst = current->currentScope->jumpInstructions;
+    while (jumpInst != NULL)
+    {
+        if (jumpInst->type == FCS_BREAK)
+            patchBreakStatement(jumpInst->jumpOffset);
+        jumpInst = jumpInst->next;
+    }
+    //<
+
     endScope();
 }
 
@@ -903,12 +937,11 @@ static void function(FunctionType type)
 {
     Compiler compiler;
     initCompiler(&compiler, type);
-    beginScope(); // [no-end-scope]
 
     ScopeType scopeType = SCOPE_FUNCTION;
     if (type == TYPE_SCRIPT)
         scopeType = SCOPE_GLOBAL;
-    initScopeCompiler(scopeType);
+    beginScope(scopeType); // [no-end-scope]
 
     consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
     if (!check(TOKEN_RIGHT_PAREN))
@@ -1472,6 +1505,7 @@ static void initCompiler(Compiler *compiler, FunctionType type)
     compiler->type = type;
     compiler->localCount = 0;
     compiler->scopeDepth = 0;
+    compiler->currentScope = NULL;
     compiler->function = newFunction();
     current = compiler;
     if (type != TYPE_SCRIPT)

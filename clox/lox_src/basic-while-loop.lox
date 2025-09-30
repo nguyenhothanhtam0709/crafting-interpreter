@@ -1,6 +1,7 @@
 var i = 1;
 while (i <= 5) {
   if (i == 2) {
+    var aa = 101;
     i = i + 1;
     continue;
   }
