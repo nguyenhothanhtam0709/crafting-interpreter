@@ -984,11 +984,23 @@ static void conditional_(bool canAssign)
     TokenType operatorType = parser.previous.type;
     ParseRule *rule = getRule(operatorType);
 
-    int thenJump = emitJump(OP_JUMP_IF_FALSE);
-    emitByte(OP_POP); // Explicit pop the condition;
+    //> Then
+    int elseJump = emitJump(OP_JUMP_IF_FALSE);
+    emitByte(OP_POP);                                // Explicit pop the condition;
     parsePrecedence((Precedence)(rule->precedence)); // Parse then side
 
-    
+    int endJump = emitJump(OP_JUMP);
+    //<
+
+    consume(TOKEN_COLON, "Expect ':' after expression.");
+
+    //> Else
+    patchJump(elseJump);
+    emitByte(OP_POP); // Explicit pop the condition;
+    parsePrecedence((Precedence)(rule->precedence));
+    //<
+
+    patchJump(endJump);
 }
 
 static void binary(bool canAssign)
