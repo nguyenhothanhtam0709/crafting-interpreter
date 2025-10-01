@@ -15,6 +15,8 @@ typedef enum
     TOKEN_SEMICOLON,
     TOKEN_SLASH,
     TOKEN_STAR,
+    TOKEN_COLON,         // `:`
+    TOKEN_QUESTION_MARK, // `?`
     // One or two character tokens.
     TOKEN_BANG,
     TOKEN_BANG_EQUAL,
