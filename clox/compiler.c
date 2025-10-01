@@ -23,15 +23,16 @@ typedef void (*ParseFn)(bool canAssign);
 typedef enum
 {
     PREC_NONE,
-    PREC_ASSIGNMENT, // =
-    PREC_OR,         // or
-    PREC_AND,        // and
-    PREC_EQUALITY,   // == !=
-    PREC_COMPARISON, // < > <= >=
-    PREC_TERM,       // + -
-    PREC_FACTOR,     // * /
-    PREC_UNARY,      // ! -
-    PREC_CALL,       // . ()
+    PREC_ASSIGNMENT,  // =
+    PREC_CONDITIONAL, // ?:
+    PREC_OR,          // or
+    PREC_AND,         // and
+    PREC_EQUALITY,    // == !=
+    PREC_COMPARISON,  // < > <= >=
+    PREC_TERM,        // + -
+    PREC_FACTOR,      // * /
+    PREC_UNARY,       // ! -
+    PREC_CALL,        // . ()
     PREC_PRIMARY
 } Precedence;
 
@@ -180,6 +181,7 @@ static void ifStatement();
 static void whileStatement();
 static void forStatement();
 static void returnStatement();
+static void conditional_(bool canAssign);
 static void binary(bool canAssign);
 static void call(bool canAssign);
 static void dot(bool canAssign);
@@ -241,6 +243,8 @@ ParseRule rules[] = {
     [TOKEN_GREATER_EQUAL] = {NULL, binary, PREC_COMPARISON},
     [TOKEN_LESS] = {NULL, binary, PREC_COMPARISON},
     [TOKEN_LESS_EQUAL] = {NULL, binary, PREC_COMPARISON},
+    [TOKEN_QUESTION_MARK] = {NULL, conditional_, PREC_CONDITIONAL},
+    [TOKEN_COLON] = {NULL, NULL, PREC_NONE},
     [TOKEN_IDENTIFIER] = {variable, NULL, PREC_NONE},
     [TOKEN_STRING] = {string, NULL, PREC_NONE},
     [TOKEN_NUMBER] = {number, NULL, PREC_NONE},
@@ -973,6 +977,30 @@ static void function(FunctionType type)
         emitByte(compiler.upvalues[i].isLocal ? 1 : 0);
         emitByte(compiler.upvalues[i].index);
     }
+}
+
+static void conditional_(bool canAssign)
+{
+    TokenType operatorType = parser.previous.type;
+    ParseRule *rule = getRule(operatorType);
+
+    //> Then
+    int elseJump = emitJump(OP_JUMP_IF_FALSE);
+    emitByte(OP_POP);                                // Explicit pop the condition;
+    parsePrecedence((Precedence)(rule->precedence)); // Parse then side
+
+    int endJump = emitJump(OP_JUMP);
+    //<
+
+    consume(TOKEN_COLON, "Expect ':' after expression.");
+
+    //> Else
+    patchJump(elseJump);
+    emitByte(OP_POP); // Explicit pop the condition;
+    parsePrecedence((Precedence)(rule->precedence));
+    //<
+
+    patchJump(endJump);
 }
 
 static void binary(bool canAssign)
